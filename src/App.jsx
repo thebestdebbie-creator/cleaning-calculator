@@ -30,7 +30,7 @@ const SERVICES = [
     key:          "weekly",
     label:        "Recurring — Weekly",
     desc:         "Ongoing weekly maintenance clean",
-    sqftPerHour:  600,
+    sqftPerHour:  550,
     rateType:     "standard",
   },
   {
