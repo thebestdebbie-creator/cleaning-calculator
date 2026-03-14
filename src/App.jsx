@@ -61,8 +61,8 @@ const RATES = {
 // MILEAGE
 // ─────────────────────────────────────────────────────────────────────────────
 const MILEAGE = {
-  edmonton: { threshold: 40, chargePerBracket: 7.50 },
-  leduc:    { threshold: 20, chargePerBracket: 5 },
+  edmonton: { threshold: 60, chargePerBracket: 7.50 },
+  leduc:    { threshold: 30, chargePerBracket: 5 },
 };
 
 function calcMileage(location, km) {
