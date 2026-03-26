@@ -37,7 +37,7 @@ const SERVICES = [
     key:          "biweekly",
     label:        "Recurring — Bi-Weekly",
     desc:         "Ongoing every-two-weeks maintenance clean",
-    sqftPerHour:  650,
+    sqftPerHour:  675,
     rateType:     "standard",
   },
   {
