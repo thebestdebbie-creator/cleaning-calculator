@@ -6,15 +6,15 @@ import { useState } from "react";
 // ─────────────────────────────────────────────────────────────────────────────
 const SERVICES = [
   {
-    key:          "deep",
-    label:        "Deep Clean / Move In / Move Out",
-    desc:         "Thorough top-to-bottom clean or vacant home",
-    sqftPerHour:  100,
+    key:          "move",
+    label:        "Move In / Move Out",
+    desc:         "Thorough top-to-bottom clean of vacant home",
+    sqftPerHour:  110,
     rateType:     "premium",
   },
   {
-    key:          "initial",
-    label:        "Initial Clean",
+    key:          "deep",
+    label:        "Initial Deep Clean",
     desc:         "First clean before starting a recurring schedule",
     sqftPerHour:  225,
     rateType:     "premium",
@@ -24,20 +24,20 @@ const SERVICES = [
     label:        "One-Time Clean",
     desc:         "Single visit, no recurring schedule",
     sqftPerHour:  350,
-    rateType:     "premium",
+    rateType:     "standard",
   },
   {
     key:          "weekly",
     label:        "Recurring — Weekly",
     desc:         "Ongoing weekly maintenance clean",
-    sqftPerHour:  650,
+    sqftPerHour:  700,
     rateType:     "standard",
   },
   {
     key:          "biweekly",
     label:        "Recurring — Bi-Weekly",
     desc:         "Ongoing every-two-weeks maintenance clean",
-    sqftPerHour:  600,
+    sqftPerHour:  650,
     rateType:     "standard",
   },
   {
@@ -53,7 +53,7 @@ const SERVICES = [
 // HOURLY RATES
 // ─────────────────────────────────────────────────────────────────────────────
 const RATES = {
-  edmonton: { standard: 50, premium: 55 },
+  edmonton: { standard: 45, premium: 55 },
   leduc:    { standard: 45, premium: 50 },
 };
 
@@ -61,8 +61,8 @@ const RATES = {
 // MILEAGE
 // ─────────────────────────────────────────────────────────────────────────────
 const MILEAGE = {
-  edmonton: { threshold: 60, chargePerBracket: 7.50 },
-  leduc:    { threshold: 30, chargePerBracket: 5 },
+  edmonton: { threshold: 40, chargePerBracket: 15 },
+  leduc:    { threshold: 20, chargePerBracket: 10 },
 };
 
 function calcMileage(location, km) {
@@ -148,7 +148,7 @@ export default function CleaningCalculator() {
   const multFactor    = MULTIPLIERS.find(m => m.key === multiplier).factor;
 
   const hours         = effectiveSqft / service.sqftPerHour;
-  const adjHours      = hours * multFactor;
+  const adjHours      = hours * multFactor + 0.5; // +30 min for arrival, walkthrough, travel, etc.
   const basePrice     = adjHours * rate;
   const mileageCharge = calcMileage(location, km);
   const totalPrice    = basePrice + mileageCharge;
@@ -360,15 +360,19 @@ export default function CleaningCalculator() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <TimeRow
               label={`${effectiveSqft.toLocaleString()} sq ft ÷ ${service.sqftPerHour} sq ft/hr`}
-              value={fmtHrs(hours)}
+              value={fmtHrs(hours * multFactor)}
               sub={hasBasement ? `Main floor ${sqft.toLocaleString()} sq ft + basement ${Math.round(sqft / 3).toLocaleString()} sq ft` : undefined}
             />
             {multFactor > 1 && (
               <TimeRow
                 label={`${MULTIPLIERS.find(m => m.key === multiplier).label} condition (+${Math.round((multFactor - 1) * 100)}%)`}
-                value={`+${fmtHrs(adjHours - hours)}`}
+                value={`included above`}
               />
             )}
+            <TimeRow
+              label="Arrival, walkthrough, photos, travel &amp; wrap-up"
+              value="+30 min"
+            />
           </div>
           <div style={{ borderTop: `1px solid ${C.grey200}`, marginTop: 12, paddingTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: C.grey700 }}>Total estimated time</span>
