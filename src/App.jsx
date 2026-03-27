@@ -9,7 +9,7 @@ const SERVICES = [
     key:          "move",
     label:        "Move In / Move Out",
     desc:         "Thorough top-to-bottom clean of vacant home",
-    sqftPerHour:  110,
+    sqftPerHour:  125,
     rateType:     "premium",
   },
   {
@@ -30,21 +30,21 @@ const SERVICES = [
     key:          "weekly",
     label:        "Recurring — Weekly",
     desc:         "Ongoing weekly maintenance clean",
-    sqftPerHour:  700,
+    sqftPerHour:  625,
     rateType:     "standard",
   },
   {
     key:          "biweekly",
     label:        "Recurring — Bi-Weekly",
     desc:         "Ongoing every-two-weeks maintenance clean",
-    sqftPerHour:  675,
+    sqftPerHour:  575,
     rateType:     "standard",
   },
   {
     key:          "monthly",
     label:        "Recurring — Monthly",
     desc:         "Ongoing monthly maintenance clean",
-    sqftPerHour:  500,
+    sqftPerHour:  450,
     rateType:     "standard",
   },
 ];
