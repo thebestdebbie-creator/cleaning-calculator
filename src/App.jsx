@@ -61,7 +61,7 @@ const RATES = {
 // MILEAGE
 // ─────────────────────────────────────────────────────────────────────────────
 const MILEAGE = {
-  edmonton: { threshold: 40, chargePerBracket: 15 },
+  edmonton: { threshold: 20, chargePerBracket: 15 },
   leduc:    { threshold: 20, chargePerBracket: 10 },
 };
 
@@ -79,6 +79,7 @@ const MULTIPLIERS = [
   { key: "standard", label: "Standard",  sub: "Typical home",                                              factor: 1.0 },
   { key: "level1",   label: "Level 1",   sub: "Busier home — pet or young child",                          factor: 1.1 },
   { key: "level2",   label: "Level 2",   sub: "High traffic — multiple pets, 4+ people, extra clutter",    factor: 1.2 },
+  { key: "level3",   label: "Level 3",   sub: "Code Red",                                                  factor: 1.4 },
 ];
 
 // Monthly visit counts for revenue estimate
