@@ -16,7 +16,7 @@ const SERVICES = [
     key:          "deep",
     label:        "Initial Deep Clean",
     desc:         "First clean before starting a recurring schedule",
-    sqftPerHour:  225,
+    sqftPerHour:  150,
     rateType:     "premium",
   },
   {
