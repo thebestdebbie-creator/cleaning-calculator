@@ -4,12 +4,10 @@ import { useState } from "react";
 // REGULAR SERVICE TYPES (sqft-based pricing)
 // ─────────────────────────────────────────────────────────────────────────────
 const SERVICES = [
-  { key: "deep",     label: "Deep Clean / Move In / Move Out", desc: "Thorough top-to-bottom clean or vacant home",       sqftPerHour: 100, rateType: "premium"  },
-  { key: "initial",  label: "Initial Clean",                   desc: "First clean before starting a recurring schedule",  sqftPerHour: 225, rateType: "premium"  },
-  { key: "oneTime",  label: "One-Time Clean",                  desc: "Single visit, no recurring schedule",               sqftPerHour: 350, rateType: "premium"  },
-  { key: "weekly",   label: "Recurring — Weekly",              desc: "Ongoing weekly maintenance clean",                  sqftPerHour: 700, rateType: "standard" },
+  { key: "oneTime",  label: "One-Time Clean",                  desc: "Single visit or first visit",               sqftPerHour: 250, rateType: "premium"  },
+  { key: "weekly",   label: "Recurring — Weekly",              desc: "Ongoing weekly maintenance clean",                  sqftPerHour: 750, rateType: "standard" },
   { key: "biweekly", label: "Recurring — Bi-Weekly",           desc: "Ongoing every-two-weeks maintenance clean",         sqftPerHour: 650, rateType: "standard" },
-  { key: "monthly",  label: "Recurring — Monthly",             desc: "Ongoing monthly maintenance clean",                 sqftPerHour: 500, rateType: "standard" },
+  { key: "monthly",  label: "Recurring — Monthly",             desc: "Ongoing monthly maintenance clean",                 sqftPerHour: 450, rateType: "standard" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
