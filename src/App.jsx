@@ -64,6 +64,9 @@ const MULTIPLIERS = [
   { key: "standard", label: "Standard", sub: "Typical home",                                              factor: 1.0 },
   { key: "level1",   label: "Level 1",  sub: "Busier home — pet or young child",                          factor: 1.1 },
   { key: "level2",   label: "Level 2",  sub: "High traffic — multiple pets, 4+ people, extra clutter",    factor: 1.2 },
+  { key: "code red",   label: "Code Red",  sub: "Standard maintenance, never been cleaned",    factor: 1.4 },
+  { key: "deep",   label: "Deep",  sub: "Extra detail, cabinets",    factor: 1.5 },
+  { key: "Move",   label: "Move",  sub: "Extra detail, cabinets in and out",    factor: 1.7 },
 ];
 
 const MONTHLY_VISITS = { weekly: 4.33, biweekly: 2.17, monthly: 1 };
