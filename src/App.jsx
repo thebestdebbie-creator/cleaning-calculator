@@ -11,12 +11,49 @@ const SERVICES = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PREMIUM SERVICE TIERS (bedroom/bathroom-based pricing)
+// Base price covers 3 bedrooms + 2 full baths
+// ─────────────────────────────────────────────────────────────────────────────
+const PREMIUM_TIERS = {
+  weekly: [
+    { key: "signature", label: "Signature", base: 135, perBed:  7.50, perFullBath: 25, perHalfBath: 10, blurb: "Essential weekly maintenance" },
+    { key: "elevation", label: "Elevation", base: 189, perBed: 10.00, perFullBath: 25, perHalfBath: 10, blurb: "Enhanced weekly service" },
+    { key: "platinum",  label: "Platinum",  base: 249, perBed: 10.00, perFullBath: 25, perHalfBath: 10, blurb: "Top-tier weekly experience" },
+  ],
+  biweekly: [
+    { key: "signature", label: "Signature", base: 155, perBed: 10.00, perFullBath: 30, perHalfBath: 15, blurb: "Essential bi-weekly maintenance" },
+    { key: "elevation", label: "Elevation", base: 219, perBed: 10.00, perFullBath: 30, perHalfBath: 15, blurb: "Enhanced bi-weekly service" },
+    { key: "platinum",  label: "Platinum",  base: 289, perBed: 10.00, perFullBath: 30, perHalfBath: 15, blurb: "Top-tier bi-weekly experience" },
+  ],
+};
+
+const SERVICE_MODES = [
+  { key: "regular",        label: "Regular Service",         sub: "Square-footage-based pricing for any service type" },
+  { key: "premiumWeekly",  label: "Premium Weekly Service",  sub: "Tiered weekly pricing by bed/bath count" },
+  { key: "premiumBiweekly",label: "Premium Bi-Weekly Service",sub: "Tiered bi-weekly pricing by bed/bath count" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RATES
 // ─────────────────────────────────────────────────────────────────────────────
 const RATES = {
   edmonton: { standard: 50, premium: 55 },
   leduc:    { standard: 45, premium: 50 },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MILEAGE
+// ─────────────────────────────────────────────────────────────────────────────
+const MILEAGE = {
+  edmonton: { threshold: 40, chargePerBracket: 15 },
+  leduc:    { threshold: 20, chargePerBracket: 10 },
+};
+
+function calcMileage(location, km) {
+  const { threshold, chargePerBracket } = MILEAGE[location];
+  if (km <= threshold) return 0;
+  return Math.ceil((km - threshold) / 10) * chargePerBracket;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MULTIPLIERS (regular service only)
@@ -79,6 +116,16 @@ const fmtHrs = h => {
   if (mins === 0) return `${hrs} hr${hrs !== 1 ? "s" : ""}`;
   if (hrs  === 0) return `${mins} min`;
   return `${hrs} hr${hrs !== 1 ? "s" : ""} ${mins} min`;
+};
+
+function calcPremiumPrice(tier, bedrooms, fullBaths, halfBaths) {
+  const extraBeds      = Math.max(0, bedrooms  - 3);
+  const extraFullBaths = Math.max(0, fullBaths - 2);
+  const extraHalfBaths = Math.max(0, halfBaths);
+  return tier.base
+    + extraBeds      * tier.perBed
+    + extraFullBaths * tier.perFullBath
+    + extraHalfBaths * tier.perHalfBath;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,7 +155,13 @@ export default function CleaningCalculator() {
   // ── Effective sqft (used for initial deep clean too) ───────────────────────
   const effectiveSqft = hasBasement ? Math.round(sqft * (4 / 3)) : sqft;
 
-   // ── REGULAR PRICING ────────────────────────────────────────────────────────
+  // ── Mileage ────────────────────────────────────────────────────────────────
+  const mileageCharge  = calcMileage(location, km);
+  const { threshold, chargePerBracket } = MILEAGE[location];
+  const kmOver         = Math.max(0, km - threshold);
+  const brackets       = kmOver > 0 ? Math.ceil(kmOver / 10) : 0;
+
+  // ── REGULAR PRICING ────────────────────────────────────────────────────────
   const service     = SERVICES.find(s => s.key === serviceKey);
   const rate        = RATES[location][service?.rateType || "standard"];
   const multFactor  = MULTIPLIERS.find(m => m.key === multiplier).factor;
