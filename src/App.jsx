@@ -22,14 +22,14 @@ const BASEMENT_MULTIPLIER = {
 // ─────────────────────────────────────────────────────────────────────────────
 const SERVICES = {
   recurring: [
-    { key: "weekly",   label: "Recurring — Weekly",    desc: "Ongoing weekly maintenance",          sqftPerHour: 525, rateType: "standard", category: "recurring" },
-    { key: "biweekly", label: "Recurring — Bi-Weekly", desc: "Ongoing every-two-weeks maintenance", sqftPerHour: 475, rateType: "standard", category: "recurring" },
-    { key: "monthly",  label: "Recurring — Monthly",   desc: "Ongoing monthly maintenance",         sqftPerHour: 425, rateType: "standard", category: "recurring" },
+    { key: "weekly",   label: "Recurring — Weekly",    desc: "Ongoing weekly maintenance",          sqftPerHour: 550, rateType: "standard", category: "recurring" },
+    { key: "biweekly", label: "Recurring — Bi-Weekly", desc: "Ongoing every-two-weeks maintenance", sqftPerHour: 420, rateType: "standard", category: "recurring" },
+    { key: "monthly",  label: "Recurring — Monthly",   desc: "Ongoing monthly maintenance",         sqftPerHour: 410, rateType: "standard", category: "recurring" },
   ],
   project: [
-    { key: "oneTime",   label: "One-Time Maintenance", desc: "Single maintenance visit, no recurring schedule",  sqftPerHour: 350, rateType: "premium", category: "recurring" },
-    { key: "initial",   label: "Initial Clean",        desc: "First clean before recurring starts",              sqftPerHour: 175, rateType: "premium", category: "deep"      },
-    { key: "moveInOut", label: "Move In / Out",        desc: "Pre- or post-occupancy deep clean, empty home",    sqftPerHour: 165, rateType: "premium", category: "moveInOut" },
+    { key: "oneTime",   label: "One-Time Maintenance", desc: "Single maintenance visit, no recurring schedule",  sqftPerHour: 290, rateType: "premium", category: "recurring" },
+    { key: "initial",   label: "Initial Clean",        desc: "First clean before recurring starts",              sqftPerHour: 121, rateType: "premium", category: "deep"      },
+    { key: "moveInOut", label: "Move In / Out",        desc: "Pre- or post-occupancy deep clean, empty home",    sqftPerHour: 153, rateType: "premium", category: "moveInOut" },
     { key: "reset",     label: "Reset",                desc: "Mid-cycle refresh between regular visits",         sqftPerHour: 330, rateType: "premium", category: "recurring" },
   ],
 };
@@ -50,9 +50,9 @@ const MULTIPLIERS = [
   { key: "standard", label: "Standard", sub: "Typical home",                                            factor: 1.00 },
   { key: "level1",   label: "Level 1",  sub: "Busier home — pet or young child",                        factor: 1.10 },
   { key: "level2",   label: "Level 2",  sub: "High traffic — multiple pets, 4+ people, extra clutter",  factor: 1.20 },
-  { key: "codeRed",  label: "Code Red", sub: "Standard maintenance, never been cleaned",                factor: 1.40 },
-  { key: "deep",     label: "Deep",     sub: "Extra detail, cabinets",                                  factor: 1.50 },
-  { key: "move",     label: "Move",     sub: "Extra detail, cabinets in and out",                       factor: 1.70 },
+  { key: "codeRed",  label: "Code Red", sub: "Standard maintenance, never been cleaned",                factor: 2.00 },
+  { key: "deep",     label: "Deep",     sub: "Extra detail, cabinets",                                  factor: 2.25 },
+  { key: "move",     label: "Move",     sub: "Extra detail, cabinets in and out",                       factor: 2.50 },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
