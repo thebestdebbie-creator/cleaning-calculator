@@ -16,25 +16,53 @@ const MAINT_BASE_HRS = 2.84;
 const MAINT_PER_SQFT = 0.00073;
 const maintenanceHours = sqft => MAINT_BASE_HRS + MAINT_PER_SQFT * sqft;
 
-// Each service is a multiple of that baseline. Frequency multipliers keep the
-// sensible order (monthly costs more per visit than bi-weekly than weekly,
-// because more dirt builds up). Project multipliers are calibrated from your
-// actual deep / initial / move-out job times.
+// Recurring services are a multiple of that baseline (frequency multipliers keep
+// the sensible order: monthly per visit > bi-weekly > weekly). Deep/initial/spring
+// and move-in/out are built differently — see the DEEP / MOVE MODEL below.
 // histRevHr = what you've historically averaged per person-hour (reference only).
 const SERVICES = {
   recurring: [
-    { key: "weekly",   label: "Recurring — Weekly",    desc: "Ongoing weekly maintenance",          timeMult: 0.90, histRevHr: 45.00, category: "recurring", marketRate: "standard" },
-    { key: "biweekly", label: "Recurring — Bi-Weekly", desc: "Ongoing every-two-weeks maintenance", timeMult: 1.00, histRevHr: 45.00, category: "recurring", marketRate: "standard" },
-    { key: "monthly",  label: "Recurring — Monthly",   desc: "Ongoing monthly maintenance",         timeMult: 1.12, histRevHr: 49.75, category: "recurring", marketRate: "standard" },
+    { key: "weekly",   label: "Recurring — Weekly",    desc: "Ongoing weekly maintenance",          model: "recurring", timeMult: 0.90, histRevHr: 45.00, category: "recurring", marketRate: "standard" },
+    { key: "biweekly", label: "Recurring — Bi-Weekly", desc: "Ongoing every-two-weeks maintenance", model: "recurring", timeMult: 1.00, histRevHr: 45.00, category: "recurring", marketRate: "standard" },
+    { key: "monthly",  label: "Recurring — Monthly",   desc: "Ongoing monthly maintenance",         model: "recurring", timeMult: 1.12, histRevHr: 49.75, category: "recurring", marketRate: "standard" },
   ],
   project: [
-    { key: "oneTime",   label: "One-Time / Standard", desc: "Single maintenance visit, no schedule",     timeMult: 1.25, histRevHr: 50.81, category: "recurring", marketRate: "premium" },
-    { key: "initial",   label: "Initial Clean",       desc: "First clean before recurring starts",       timeMult: 1.90, histRevHr: 41.98, category: "deep",      marketRate: "premium" },
-    { key: "deepSpring", label: "Deep / Spring",      desc: "Top-to-bottom detail clean",                timeMult: 3.50, histRevHr: 30.29, category: "deep",      marketRate: "premium" },
-    { key: "moveInOut", label: "Move In / Out",       desc: "Pre/post-occupancy deep clean, empty home", timeMult: 3.50, histRevHr: 44.38, category: "moveInOut", marketRate: "premium" },
+    { key: "oneTime",   label: "One-Time / Standard", desc: "Single maintenance visit, no schedule",      model: "recurring", timeMult: 1.25, histRevHr: 50.81, category: "recurring", marketRate: "premium" },
+    { key: "initial",   label: "Initial Clean",       desc: "First clean before recurring (= deep)",      model: "deep", histRevHr: 41.98, category: "deep",      marketRate: "premium" },
+    { key: "deepSpring", label: "Deep / Spring",      desc: "Top-to-bottom detail clean",                 model: "deep", histRevHr: 30.29, category: "deep",      marketRate: "premium" },
+    { key: "moveInOut", label: "Move In / Out",       desc: "Pre/post-occupancy clean, empty home",       model: "move", histRevHr: 44.38, category: "moveInOut", marketRate: "premium" },
   ],
 };
 const ALL_SERVICES = [...SERVICES.recurring, ...SERVICES.project];
+
+// ── DEEP / MOVE MODEL ────────────────────────────────────────────────────────
+// Deep / initial / spring  = 1.75 × the monthly clean + EXTERIOR cabinets.
+// Move in / out            = 1.50 × the monthly clean + INTERIOR & EXTERIOR cabinets
+//                            (less than deep because the home is empty).
+// Cabinet time, and the detail add-ons, scale with home size between SMALL and LARGE.
+const MONTHLY_MULT     = 1.12;       // keep in sync with the Monthly service above
+const DEEP_BASE_MULT   = 1.75;
+const MOVE_BASE_MULT   = 1.50;
+const SMALL_HOME       = 1000;       // sq ft anchor for the "smallest home" end of every range
+const LARGE_HOME       = 4000;       // sq ft anchor for the "largest home" end
+const DEEP_CABINET_MIN = [30, 90];   // exterior cabinets: 30 min (small) → 1.5 hr (large)
+const MOVE_CABINET_MIN = [45, 120];  // interior + exterior cabinets: 45 min → 2 hr
+// Linear interpolation of a minutes range across home size, clamped at both ends.
+const lerpBySize = (lo, hi, sqft) => {
+  const t = Math.max(0, Math.min(1, (sqft - SMALL_HOME) / (LARGE_HOME - SMALL_HOME)));
+  return lo + (hi - lo) * t;
+};
+// Core base hours before condition, bed/bath and add-ons (cabinets handled separately).
+function serviceCoreHours(service, sqft) {
+  const monthlyH = maintenanceHours(sqft) * MONTHLY_MULT;
+  if (service.model === "deep") return DEEP_BASE_MULT * monthlyH;
+  if (service.model === "move") return MOVE_BASE_MULT * monthlyH;
+  return maintenanceHours(sqft) * service.timeMult;
+}
+const cabinetMinutesFor = (service, sqft) =>
+  service.model === "deep" ? lerpBySize(DEEP_CABINET_MIN[0], DEEP_CABINET_MIN[1], sqft)
+  : service.model === "move" ? lerpBySize(MOVE_CABINET_MIN[0], MOVE_CABINET_MIN[1], sqft)
+  : 0;
 
 // ── MARKET REFERENCE RATES (sanity-check only; price is margin-driven) ────────
 const MARKET_RATES = {
@@ -63,18 +91,24 @@ const ROOM_TIME = {
   },
 };
 
-// ── ADD-ONS ──────────────────────────────────────────────────────────────────
-const ADDON_BASELINE_SQFT = 1500;
+// ── ADD-ONS (à la carte; not in any base package) ────────────────────────────
+// range = [minutes at SMALL_HOME, minutes at LARGE_HOME]; fixed = flat minutes.
+// Fridge is occupancy-based: empty move-out homes are quicker than occupied homes.
 const ADD_ONS = [
-  { key: "fridge",     label: "Inside fridge",                        minutes:  30, scales: false },
-  { key: "oven",       label: "Inside oven",                          minutes:  45, scales: false },
-  { key: "cabEmpty",   label: "Inside cabinets (empty)",              minutes:  60, scales: false },
-  { key: "baseboards", label: "Baseboards / doors / trim",            minutes:  60, scales: true  },
-  { key: "wallSpot",   label: "Wall spot-washing",                    minutes:  45, scales: true  },
-  { key: "wallFull",   label: "Full wall washing",                    minutes: 150, scales: true  },
-  { key: "windows",    label: "Interior windows (incl. patio doors)", minutes:  75, scales: true  },
+  { key: "fridge",       label: "Inside fridge",             kind: "fridge"   },
+  { key: "oven",         label: "Inside oven",               fixed: 60        },
+  { key: "baseboards",   label: "Baseboards / doors / trim", range: [30, 120] },
+  { key: "wallSpot",     label: "Spot wall-washing",         range: [30, 120] },
+  { key: "wallFull",     label: "Full wall washing",         range: [90, 240] },
+  { key: "windows",      label: "Interior windows",          range: [30, 180] },
+  { key: "cupboardTops", label: "Top of cupboards & fridge", range: [15, 45]  },
 ];
-const addonMinutes = (a, eff) => (a.scales ? Math.round(a.minutes * (eff / ADDON_BASELINE_SQFT)) : a.minutes);
+function addonMinutes(a, sqft, model) {
+  if (a.kind === "fridge") return model === "move" ? 45 : 60;
+  if (a.fixed != null) return a.fixed;
+  return Math.round(lerpBySize(a.range[0], a.range[1], sqft));
+}
+const addonScales = a => a.range != null; // italic in the UI when it varies by size
 
 // ── FIXED ECONOMICS ──────────────────────────────────────────────────────────
 const MIN_CHARGE = 120;
@@ -138,7 +172,9 @@ export default function CleaningCalculator() {
   const conditionObj  = CONDITIONS.find(m => m.key === condition);
   const conditionFactor = conditionObj.factor;
 
-  const baseHours        = maintenanceHours(effectiveSqft) * service.timeMult;
+  const coreHours        = serviceCoreHours(service, effectiveSqft);
+  const cabinetMinutes   = cabinetMinutesFor(service, effectiveSqft);
+  const baseHours        = coreHours + cabinetMinutes / 60;
   const conditionedHours = baseHours * conditionFactor;
 
   const roomTimes      = ROOM_TIME.byCategory[service.category];
@@ -148,7 +184,7 @@ export default function CleaningCalculator() {
 
   const addOnMinutes = selectedAddOns.reduce((s, key) => {
     const a = ADD_ONS.find(a => a.key === key);
-    return s + (a ? addonMinutes(a, effectiveSqft) : 0);
+    return s + (a ? addonMinutes(a, effectiveSqft, service.model) : 0);
   }, 0);
 
   const personHours    = conditionedHours + bedBathMinutes / 60 + addOnMinutes / 60;
@@ -289,16 +325,17 @@ export default function CleaningCalculator() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {ADD_ONS.map(a => {
                 const on = selectedAddOns.includes(a.key);
-                const mins = addonMinutes(a, effectiveSqft);
+                const mins = addonMinutes(a, effectiveSqft, service.model);
                 const cost = (mins / 60) * pricePerHour;
+                const scales = addonScales(a);
                 return (
                   <button key={a.key} onClick={() => toggleAddOn(a.key)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", background: on ? C.activeBg : C.white, border: `1.5px solid ${on ? C.activeBorder : C.border}`, borderRadius: 8, cursor: "pointer", textAlign: "left" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <CB checked={on} />
-                      <span style={{ fontSize: 13, fontWeight: 600, color: on ? C.activeText : C.black, fontStyle: a.scales ? "italic" : "normal" }}>{a.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: on ? C.activeText : C.black, fontStyle: scales ? "italic" : "normal" }}>{a.label}</span>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", flexShrink: 0, marginLeft: 8, lineHeight: 1.2 }}>
-                      <span style={{ fontSize: 12, fontFamily: "monospace", color: on ? C.blue700 : C.grey400, fontWeight: 700, fontStyle: a.scales ? "italic" : "normal" }}>+{mins}m</span>
+                      <span style={{ fontSize: 12, fontFamily: "monospace", color: on ? C.blue700 : C.grey400, fontWeight: 700, fontStyle: scales ? "italic" : "normal" }}>+{mins}m</span>
                       <span style={{ fontSize: 11, fontFamily: "monospace", color: on ? C.blue600 : C.grey400, fontWeight: 600 }}>{fmt(cost)}</span>
                     </div>
                   </button>
@@ -306,7 +343,7 @@ export default function CleaningCalculator() {
               })}
             </div>
             <div style={{ marginTop: 10, padding: "8px 12px", fontSize: 11, color: C.grey500, fontStyle: "italic", lineHeight: 1.5 }}>
-              Italic items scale with home size (baseline at {ADDON_BASELINE_SQFT.toLocaleString()} sq ft). Prices use your current margin-safe rate.
+              Italic items scale with home size (more for larger homes). Fridge is quicker on empty move-out homes. None are included in any base package.
             </div>
             {addOnMinutes > 0 && (
               <div style={{ marginTop: 4, padding: "10px 14px", background: C.blue50, borderRadius: 8, fontSize: 12, color: C.blue700, display: "flex", justifyContent: "space-between" }}>
@@ -427,7 +464,12 @@ export default function CleaningCalculator() {
 
           {/* time breakdown */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 8, marginBottom: 14 }}>
-            <BreakdownRow label={`Base clean time (${baseHours > 0 ? Math.round(effectiveSqft / baseHours) : 0} sq ft/hr)`} value={fmtHrs(baseHours)} />
+            <BreakdownRow
+              label={service.model === "deep" ? `Deep base (${DEEP_BASE_MULT}× monthly)`
+                   : service.model === "move" ? `Move base (${MOVE_BASE_MULT}× monthly)`
+                   : `Base clean time (${coreHours > 0 ? Math.round(effectiveSqft / coreHours) : 0} sq ft/hr)`}
+              value={fmtHrs(coreHours)} />
+            {cabinetMinutes > 0 && <BreakdownRow label={service.model === "move" ? "Cabinets (interior + exterior)" : "Cabinets (exterior)"} value={`+${fmtMin(cabinetMinutes)}`} />}
             {conditionFactor !== 1 && <BreakdownRow label={`${conditionObj.label} +${Math.round((conditionFactor - 1) * 100)}%`} value={`+${fmtMin((conditionedHours - baseHours) * 60)}`} />}
             {bedBathMinutes > 0 && <BreakdownRow label={`Bed/bath (${beds} bed · ${fullBaths} full · ${halfBaths} half)`} value={`+${fmtMin(bedBathMinutes)}`} />}
             {addOnMinutes > 0 && <BreakdownRow label={`Add-ons (${selectedAddOns.length})`} value={`+${fmtMin(addOnMinutes)}`} />}
@@ -508,7 +550,7 @@ export default function CleaningCalculator() {
 
 // ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 function ServiceCard({ sv, active, onClick, effectiveSqft, conditionFactor, pricePerHour }) {
-  const svHours = (MAINT_BASE_HRS + MAINT_PER_SQFT * effectiveSqft) * sv.timeMult * conditionFactor;
+  const svHours = (serviceCoreHours(sv, effectiveSqft) + cabinetMinutesFor(sv, effectiveSqft) / 60) * conditionFactor;
   const svPrice = svHours * pricePerHour;
   const svRate  = svHours > 0 ? Math.round(effectiveSqft / svHours) : 0;
   return (
